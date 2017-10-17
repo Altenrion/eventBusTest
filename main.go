@@ -14,7 +14,7 @@ func main (){
 
 	nc.Subscribe("Error", func(m *nats.Msg) {
 		fmt.Printf("Error: %s\n", string(m.Data))
-		fmt.Print("God, I have to do somrthing....")
+		fmt.Print("God, I have to do something....\n")
 
 	})
 
@@ -25,12 +25,11 @@ func main (){
 func repeat(d time.Duration, con *nats.Conn ) {
 	for range time.Tick(d) {
 
+		fmt.Print("------------------------------\n")
 		fmt.Print("passing some data into bus... \n")
 
 		subj, text := eventsProducer()
 		con.Publish(string(subj), []byte(text))
-		//con.Publish("foo", []byte("Hello World"))
-
 	}
 }
 
@@ -46,6 +45,7 @@ func eventsProducer() (string, string){
 		[]string{"Some.more.event","Subscription on events"},
 		[]string{"Some.more.sudden","Subscription on sudden"},
 		[]string{"Some","First level subscriptions"},
+		[]string{"foo","Just foo test"},
 	)
 	s := rand.NewSource(time.Now().Unix())
 	r := rand.New(s)
