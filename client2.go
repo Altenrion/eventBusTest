@@ -15,34 +15,17 @@ func main (){
 		fmt.Printf("Received a message 'foo' service 2: %s\n", string(m.Data))
 	})
 
-	nc.Subscribe("New_User", func(m *nats.Msg) {
-		fmt.Printf("New user creation: %s\n", string(m.Data))
-		fmt.Print("Deal, creating new bank account and schedules \n")
+	nc.QueueSubscribe("Some.more.>", "job_workers", func(m *nats.Msg) {
+		fmt.Printf("Received some: %s\n", string(m.Data))
 	})
 
-	nc.Subscribe("KPI:new", func(m *nats.Msg) {
-		fmt.Printf("New KPI creation: %s\n", string(m.Data))
-		fmt.Print("Well,... but who is the owner of KPI? \n")
-
-		nc.Publish("Error", []byte("KPI:new event must have owner inside! Not set properly \n"))
-
-	})
-
-	nc.Subscribe("Bad", func(m *nats.Msg) {
-		fmt.Printf("Oh yeah... Bad...: %s", string(m.Data))
-		fmt.Print("Well,... shell i go home?")
-
-		nc.Publish("Error", []byte("Something bad happened and i want home...\n"))
-
-	})
-
-	nc.Subscribe("Some.*.*", func(m *nats.Msg) {
-		fmt.Printf("New Some..: %s\n", string(m.Data))
-		fmt.Print("Well,... but who what is this... some about ??? \n")
-
-		nc.Publish(m.Reply, []byte("new Some event came:"+m.Subject))
-
-	})
+	//nc.Subscribe("Some.*.*", func(m *nats.Msg) {
+	//	fmt.Printf("New Some..: %s\n", string(m.Data))
+	//	fmt.Print("Well,... but who what is this... some about ??? \n")
+	//
+	//	nc.Publish(m.Reply, []byte("new Some event came:"+m.Subject))
+	//
+	//})
 
 
 	for{

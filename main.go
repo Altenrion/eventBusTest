@@ -37,14 +37,9 @@ func eventsProducer() (string, string){
 	events := make([][]string, 0)
 	events = append(events,
 		[]string{"Locked"," Connection to remote server was locked gracefully"},
-		[]string{"Error","Some error occurred in our environment"},
-		[]string{"New_User","New user was added in User_Service. React on that fact properly"},
-		[]string{"Fatal","Oh my God! Fatal disaster in da house"},
-		[]string{"KPI:new","New KPI indicator created"},
-		[]string{"Bad","Oh yeah...Bad day"},
 		[]string{"Some.more.event","Subscription on events"},
 		[]string{"Some.more.sudden","Subscription on sudden"},
-		[]string{"Some","First level subscriptions"},
+		[]string{"Some.s","First level subscriptions"},
 		[]string{"foo","Just foo test"},
 	)
 	s := rand.NewSource(time.Now().Unix())
