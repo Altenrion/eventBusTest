@@ -2,42 +2,60 @@ package main
 
 import (
 	"github.com/nats-io/go-nats"
-	"fmt"
 	"time"
+	"github.com/sirupsen/logrus"
+	"math/rand"
+	"strconv"
 )
+
+type dedicRequest struct {
+	Hash   string
+	Entity string
+	Action string
+	Id     int
+}
 
 func main (){
 
 	nc, _ := nats.Connect("nats://0.0.0.0:4222") // change on real when docker enabled
+	c, _ := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
 
 
-	nc.Subscribe("foo", func(m *nats.Msg) {
-		fmt.Printf("Received a message 'foo' service 2: %s\n", string(m.Data))
+	c.QueueSubscribe("Dedek.*", "dedic_workers", func(req *dedicRequest) {
+		logrus.Printf("Received a Dedek request: %s, to %s, reply to %s ", req.Action, req.Entity, req.Hash)
+
+		rand.Seed(time.Now().Unix())
+		myrand := random(1, 9999)
+
+		time.Sleep(7 * time.Second)
+
+		logrus.Printf("Replying to request with id: %d, hash: %s ", myrand, req.Hash)
+		message := "All done. Sleep calm. ID: "+ strconv.Itoa(myrand)+" "
+		logrus.Printf("message : %s \n", message)
+
+		c.Publish(req.Hash, message)
 	})
 
-	nc.QueueSubscribe("Some.more.>", "job_workers", func(m *nats.Msg) {
-		fmt.Printf("Received some: %s\n", string(m.Data))
+
+	c.Subscribe("foo", func(s string) {
+		logrus.Printf("Received a message 'foo' service 2: %s", s)
 	})
 
-	//nc.Subscribe("Some.*.*", func(m *nats.Msg) {
-	//	fmt.Printf("New Some..: %s\n", string(m.Data))
-	//	fmt.Print("Well,... but who what is this... some about ??? \n")
-	//
-	//	nc.Publish(m.Reply, []byte("new Some event came:"+m.Subject))
-	//
-	//})
-
+	c.QueueSubscribe("Some.more.>", "job_workers", func(m *nats.Msg) {
+		logrus.Printf("Received some: %s\n", m.Data)
+	})
 
 	for{
-		repeat_v(3*time.Second, nc)
+		repeat_v(3*time.Second)
 	}
 }
 
-func repeat_v(d time.Duration, con *nats.Conn) {
+func repeat_v(d time.Duration) {
 	for range time.Tick(d) {
-
-		fmt.Print("yeap, waiting... \n")
-
-		con.Publish("foo.back", []byte("Where is my new data, m? \n"))
+		logrus.Print("waiting......")
 	}
+}
+
+func random(min, max int) int {
+	return rand.Intn(max - min) + min
 }

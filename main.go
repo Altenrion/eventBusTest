@@ -1,51 +1,85 @@
 package main
 
 import (
-	"fmt"
-	"time"
 	"github.com/nats-io/go-nats"
+	"github.com/sirupsen/logrus"
 	"math/rand"
+	"time"
+
+	"crypto/md5"
+	"encoding/hex"
 )
 
-func main (){
-
-	fmt.Print("Hello, World!\n")
-	nc, _ := nats.Connect("nats://0.0.0.0:4222")
-
-	nc.Subscribe("Error", func(m *nats.Msg) {
-		fmt.Printf("Error: %s\n", string(m.Data))
-		fmt.Print("God, I have to do something....\n")
-
-	})
-
-	repeat(5*time.Second, nc)
+type dedicRequest struct {
+	Hash   string
+	Entity string
+	Action string
+	Id     int
 }
 
+func main() {
 
-func repeat(d time.Duration, con *nats.Conn ) {
+	logrus.Print("Hello, World!\n")
+	nc, _ := nats.Connect("nats://0.0.0.0:4222")
+	c, _ := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
+
+	defer c.Close()
+
+	repeat(5*time.Second, c)
+}
+
+func GetMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func repeat(d time.Duration, con *nats.EncodedConn) {
 	for range time.Tick(d) {
 
-		fmt.Print("------------------------------\n")
-		fmt.Print("passing some data into bus... \n")
+		logrus.Print("---------------------------------------- ")
+		logrus.Print("passing data into shared message queue | ")
+
+		timeStamp := time.Now()
+
+		if timeStamp.Second() > 45 {
+
+			queueHash := GetMD5Hash(timeStamp.String())
+			logrus.Info("-------------------------------------------- ")
+			logrus.Infof("Created hash : %s \n", queueHash)
+
+			request := &dedicRequest{Hash: queueHash, Entity: "User", Action: "Delete", Id: 111}
+
+			logrus.Infof("Publishing type  Dedek.typed ")
+			con.Publish(string("Dedek.typed"), request)
+
+			logrus.Infof("Subscribing for %s topic ", queueHash)
+			con.Subscribe(queueHash, func(m *nats.Msg) {
+				logrus.Infof("Received some: %s", string(m.Data))
+				m.Sub.Unsubscribe()
+				logrus.Infof("Must be unsubscribed from %s with %s \n", m.Sub.Subject, m.Data)
+			})
+
+		}
 
 		subj, text := eventsProducer()
 		con.Publish(string(subj), []byte(text))
 	}
 }
 
-func eventsProducer() (string, string){
+func eventsProducer() (string, string) {
 	events := make([][]string, 0)
 	events = append(events,
-		[]string{"Locked"," Connection to remote server was locked gracefully"},
-		[]string{"Some.more.event","Subscription on events"},
-		[]string{"Some.more.sudden","Subscription on sudden"},
-		[]string{"Some.s","First level subscriptions"},
-		[]string{"foo","Just foo test"},
+		[]string{"Locked", " Connection to remote server was locked gracefully"},
+		[]string{"Some.more.event", "Subscription on events"},
+		[]string{"Some.more.sudden", "Subscription on sudden"},
+		[]string{"Some.s", "First level subscriptions"},
+		[]string{"foo", "Just foo test"},
 	)
 	s := rand.NewSource(time.Now().Unix())
 	r := rand.New(s)
 	event := r.Intn(len(events))
 
-	fmt.Printf("%s : %s  \n",  events[event][0], events[event][1])
+	logrus.Printf("%s : %s ", events[event][0], events[event][1])
 	return events[event][0], events[event][1]
 }

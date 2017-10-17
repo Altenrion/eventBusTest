@@ -19,11 +19,6 @@ func main (){
 		fmt.Printf("Received some: %s\n", string(m.Data))
 	})
 
-	nc.Subscribe("Locked", func(m *nats.Msg) {
-		fmt.Printf("-------New Locked..: %s\n", string(m.Data))
-		fmt.Printf("Well,... Locked came to me only =) : %s \n", m.Subject)
-	})
-
 
 	for{
 		repeat_d(3*time.Second)
@@ -32,9 +27,6 @@ func main (){
 
 func repeat_d(d time.Duration) {
 	for range time.Tick(d) {
-
 		fmt.Print("yeap, waiting... \n")
-
-		//con.Publish("foo", []byte("Hello World"))
 	}
 }
