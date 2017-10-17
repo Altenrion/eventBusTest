@@ -4,15 +4,18 @@ import (
 	"fmt"
 	"time"
 	"github.com/nats-io/go-nats"
+	"math/rand"
 )
 
 func main (){
 
-	fmt.Printf("Hello, World!\n")
+	fmt.Print("Hello, World!\n")
 	nc, _ := nats.Connect("nats://0.0.0.0:4222")
 
-	nc.Subscribe("foo.back", func(m *nats.Msg) {
-		fmt.Printf("Reply: %s\n", string(m.Data))
+	nc.Subscribe("Error", func(m *nats.Msg) {
+		fmt.Printf("Error: %s\n", string(m.Data))
+		fmt.Print("God, I have to do somrthing....")
+
 	})
 
 	repeat(5*time.Second, nc)
@@ -22,8 +25,32 @@ func main (){
 func repeat(d time.Duration, con *nats.Conn ) {
 	for range time.Tick(d) {
 
-		fmt.Print("yeap, some time passed \n")
+		fmt.Print("passing some data into bus... \n")
 
-		con.Publish("foo", []byte("Hello World"))
+		subj, text := eventsProducer()
+		con.Publish(string(subj), []byte(text))
+		//con.Publish("foo", []byte("Hello World"))
+
 	}
+}
+
+func eventsProducer() (string, string){
+	events := make([][]string, 0)
+	events = append(events,
+		[]string{"Locked"," Connection to remote server was locked gracefully"},
+		[]string{"Error","Some error occurred in our environment"},
+		[]string{"New_User","New user was added in User_Service. React on that fact properly"},
+		[]string{"Fatal","Oh my God! Fatal disaster in da house"},
+		[]string{"KPI:new","New KPI indicator created"},
+		[]string{"Bad","Oh yeah...Bad day"},
+		[]string{"Some.more.event","Subscription on events"},
+		[]string{"Some.more.sudden","Subscription on sudden"},
+		[]string{"Some","First level subscriptions"},
+	)
+	s := rand.NewSource(time.Now().Unix())
+	r := rand.New(s)
+	event := r.Intn(len(events))
+
+	fmt.Printf("%s : %s  \n",  events[event][0], events[event][1])
+	return events[event][0], events[event][1]
 }
